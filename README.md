@@ -40,42 +40,41 @@ If 9router updates and these strings change, re-grep them from the chunks (see [
 
 ## How it flows
 
-```mermaid
-flowchart LR
-    C[client] -->|POST /v1/chat/completions| R[9router]
-    R --> T{provider<br/>transformRequest}
-    T -->|OLD| H["messages[0] =<br/>{system: 'You are CodeBuddy Code.'}"]
-    T -->|PATCHED| G["messages[0] =<br/>{system: __s0ulctl()}"]
-    G --> L[soul-loader.cjs<br/>mtime cache]
-    L -.->|reads| F[(soul.md)]
-    H --> U[upstream]
-    G --> U[upstream]
+```text
+client
+  │ POST /v1/chat/completions
+  ▼
+9router
+  │ provider.transformRequest(messages)
+  ▼
+  ├─ OLD ─────▶ messages[0] = { system: "You are CodeBuddy Code." }
+  │                   │
+  │                   ▼
+  │                upstream
+  │
+  └─ PATCHED ─▶ messages[0] = { system: globalThis.__s0ulctl() }
+                      │
+                      ▼
+               soul-loader.cjs  (mtime cache)
+                      │ reads
+                      ▼
+               /etc/s0ulctl/soul.md
+                      │
+                      ▼
+                   upstream
 ```
 
 Request path, after patch (sequence):
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Client
-    participant 9router
-    participant Chunk as patched chunk
-    participant Loader as soul-loader.cjs
-    participant Disk as /etc/s0ulctl/soul.md
-    participant Upstream
-
-    Client->>9router: POST /v1/chat/completions
-    9router->>Chunk: provider.transformRequest(messages)
-    Chunk->>Loader: globalThis.__s0ulctl()
-    Loader->>Disk: stat() mtime
-    alt mtime unchanged
-        Loader-->>Chunk: cached content
-    else mtime changed or first call
-        Loader->>Disk: readFileSync()
-        Loader-->>Chunk: fresh content
-    end
-    Chunk->>Upstream: forward with soul as system message
-    Upstream-->>Client: response
+```text
+1. client   → 9router   POST /v1/chat/completions
+2. 9router  → chunk     provider.transformRequest(messages)
+3. chunk    → loader    globalThis.__s0ulctl()
+4. loader   → disk      stat(soul.md)
+                          ├─ mtime unchanged  → return cached content
+                          └─ mtime changed or first call → readFileSync()
+5. chunk    → upstream  forward, soul content as messages[0]
+6. upstream → client    response
 ```
 
 ## Requirements
