@@ -10,7 +10,7 @@
 
 <p align="center">
   Replace the hardcoded upstream system prompts in <a href="https://www.npmjs.com/package/9router">9router</a> with your own markdown file.<br>
-  Edit the file &mdash; next request picks it up. No restart.
+  Edit the file &mdash; next request picks it up. No restart. 🔥
 </p>
 
 ---
@@ -76,7 +76,7 @@ sudo -S -p '' systemctl restart 9router.service
 To put `soul.md` somewhere else, export `S0ULCTL_PATH=/your/path` before running the installer, and set the same variable in the systemd unit's `Environment=` so the running service sees it.
 
 <details>
-<summary><b>Click: what a healthy install run looks like</b></summary>
+<summary><b>✅ Click: what a healthy install run looks like</b></summary>
 
 ```
 found 9router installs:
@@ -126,7 +126,7 @@ curl -s https://<your-9router-host>/v1/chat/completions \
 Before / after, with `examples/coding-assistant.md`:
 
 <table>
-<tr><th>without s0ulctl</th><th>with s0ulctl</th></tr>
+<tr><th>❌ without s0ulctl</th><th>✅ with s0ulctl</th></tr>
 <tr>
 <td>
 
@@ -149,7 +149,7 @@ Edit `/etc/s0ulctl/soul.md`. The next request picks up the new content:
 
 ```bash
 sudo nano /etc/s0ulctl/soul.md
-# re-run the curl above, no restart needed
+# re-run the curl above, no restart needed ♻️
 ```
 
 The loader `stat()`s the file each call and reloads on mtime change. You will see one `[s0ulctl] loaded N chars …` line in the journal per edit. The soul content itself is never logged.
