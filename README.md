@@ -50,10 +50,10 @@ So the request path after patching is: client → 9router → patched chunk (`tr
 
 ## Requirements
 
-- Linux host with 9router already installed and running (user process or `9router.service` via systemd).
-- `node` on `$PATH`, same major version 9router runs on.
-- `python3` on `$PATH` &mdash; used by the installer to rewrite the server chunk and the `custom-server.js` anchor.
-- `sudo` if 9router runs under systemd (needed for `systemctl restart` and, depending on your install, for writing into the app directory).
+- 🐧 Linux host with 9router already installed and running (user process or `9router.service` via systemd).
+- 🟢 `node` on `$PATH`, same major version 9router runs on.
+- 🐍 `python3` on `$PATH` &mdash; used by the installer to rewrite the server chunk and the `custom-server.js` anchor.
+- 🔑 `sudo` if 9router runs under systemd (needed for `systemctl restart` and, depending on your install, for writing into the app directory).
 
 ## Install
 
@@ -64,7 +64,7 @@ cd s0ulctl
 # drop a persona file at the default path
 sudo -S -p '' mkdir -p /etc/s0ulctl
 sudo -S -p '' cp examples/coding-assistant.md /etc/s0ulctl/soul.md
-# or examples/ratman4080.md, or write your own
+# or examples/ratman4080.md, or write your own 🐀
 
 # patch every discovered 9router install
 bash src/install.sh
@@ -100,7 +100,7 @@ If you run 9router as a plain user process, kill and restart it the usual way.
 
 ## Verify
 
-Confirm the loader installed and read your file:
+Confirm the loader installed and read your file 🔍
 
 ```bash
 sudo journalctl -u 9router.service -n 20 --no-pager | grep s0ulctl
@@ -113,7 +113,7 @@ Expected:
 [s0ulctl] global.__s0ulctl installed
 ```
 
-Round-trip through 9router to confirm the string reached the upstream:
+Round-trip through 9router to confirm the string reached the upstream 🛰️
 
 ```bash
 curl -s https://<your-9router-host>/v1/chat/completions \
@@ -154,7 +154,7 @@ sudo nano /etc/s0ulctl/soul.md
 
 The loader `stat()`s the file each call and reloads on mtime change. You will see one `[s0ulctl] loaded N chars …` line in the journal per edit. The soul content itself is never logged.
 
-Swap personas without touching the installer:
+Swap personas without touching the installer 🎭
 
 ```bash
 sudo cp examples/ratman4080.md /etc/s0ulctl/soul.md
