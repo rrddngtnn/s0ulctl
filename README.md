@@ -40,42 +40,13 @@ If 9router updates and these strings change, re-grep them from the chunks (see [
 
 ## How it flows
 
-```text
-client
-  │ POST /v1/chat/completions
-  ▼
-9router
-  │ provider.transformRequest(messages)
-  ▼
-  ├─ OLD ─────▶ messages[0] = { system: "You are CodeBuddy Code." }
-  │                   │
-  │                   ▼
-  │                upstream
-  │
-  └─ PATCHED ─▶ messages[0] = { system: globalThis.__s0ulctl() }
-                      │
-                      ▼
-               soul-loader.cjs  (mtime cache)
-                      │ reads
-                      ▼
-               /etc/s0ulctl/soul.md
-                      │
-                      ▼
-                   upstream
-```
+A request comes in from the client as a `POST /v1/chat/completions`. 9router routes it to the matching provider adapter, which calls its `transformRequest` hook on the message array before anything is forwarded upstream.
 
-Request path, after patch (sequence):
+Unpatched, that hook overwrites `messages[0]` with a hardcoded system string — `"You are CodeBuddy Code."` for the CodeBuddy adapters, the MiMoCode string for the Xiaomi ones — and that is what reaches the upstream model.
 
-```text
-1. client   → 9router   POST /v1/chat/completions
-2. 9router  → chunk     provider.transformRequest(messages)
-3. chunk    → loader    globalThis.__s0ulctl()
-4. loader   → disk      stat(soul.md)
-                          ├─ mtime unchanged  → return cached content
-                          └─ mtime changed or first call → readFileSync()
-5. chunk    → upstream  forward, soul content as messages[0]
-6. upstream → client    response
-```
+Patched, the same slot is filled by `globalThis.__s0ulctl()` instead. That call lands in `soul-loader.cjs`, which is `require`d from `custom-server.js` at startup and kept on the global scope. The loader `stat()`s your `soul.md` on every call: if the mtime is unchanged it hands back the cached content, otherwise it does a `readFileSync()` and refreshes the cache. Either way the returned text becomes `messages[0]` and the request goes upstream with your persona in place of the vendor's.
+
+So the request path after patching is: client → 9router → patched chunk (`transformRequest`) → `soul-loader.cjs` → `stat`/read of `soul.md` → upstream → client. The only branch in it is the mtime check inside the loader; nothing else changes between requests.
 
 ## Requirements
 
