@@ -20,9 +20,13 @@ fi
 
 find_apps() {
   local seen=""
-  for d in \
-    /home/*/.nvm/versions/node/*/lib/node_modules/9router/app \
-    /home/*/.hermes/tools/node-*/lib/node_modules/9router/app \
+  # S0ULCTL_APP_DIRS pins the search to explicit paths; S0ULCTL_HOME_ROOTS
+  # overrides the /home/* glob so a host with a non-standard layout (or a
+  # test) is not forced through the default scan.
+  local roots="${S0ULCTL_HOME_ROOTS:-/home/*}"
+  for d in ${S0ULCTL_APP_DIRS:-} \
+    $roots/.nvm/versions/node/*/lib/node_modules/9router/app \
+    $roots/.hermes/tools/node-*/lib/node_modules/9router/app \
     "$(npm root -g 2>/dev/null)/9router/app" \
     "$(dirname "$(readlink -f "$(which 9router 2>/dev/null)" 2>/dev/null)" 2>/dev/null)/app"; do
     [ -n "$d" ] && [ -f "$d/custom-server.js" ] || continue

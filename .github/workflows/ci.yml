@@ -1,0 +1,59 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['18', '20', '22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Syntax check
+        run: |
+          node --check src/soul-loader.cjs
+          node --check bin/s0ulctl.js
+          bash -n src/install.sh
+          bash -n src/uninstall.sh
+
+      - name: Tests
+        run: npm test
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: shellcheck --severity=warning src/*.sh
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: CLI help works
+        run: node bin/s0ulctl.js --help
+
+      - name: CLI rejects unknown command
+        run: |
+          if node bin/s0ulctl.js bogus 2>/dev/null; then
+            echo "expected non-zero exit"; exit 1
+          fi
+          echo "ok"

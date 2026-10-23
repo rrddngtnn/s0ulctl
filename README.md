@@ -58,22 +58,48 @@ So the request path after patching is: client → 9router → patched chunk (`tr
 ## Install
 
 ```bash
-git clone https://github.com/<you>/s0ulctl
+git clone https://github.com/rrddngtnn/s0ulctl
 cd s0ulctl
 
 # drop a persona file at the default path
 sudo -S -p '' mkdir -p /etc/s0ulctl
 sudo -S -p '' cp examples/coding-assistant.md /etc/s0ulctl/soul.md
-# or examples/ratman4080.md, or write your own 🐀
+# or examples/ratman4080.md, or write your own
 
 # patch every discovered 9router install
-bash src/install.sh
+node bin/s0ulctl.js install
 
 # activate
 sudo -S -p '' systemctl restart 9router.service
 ```
 
+`node bin/s0ulctl.js install --restart` does the restart for you (needs sudo).
+`bash src/install.sh` still works if you would rather call the script directly.
+
 To put `soul.md` somewhere else, export `S0ULCTL_PATH=/your/path` before running the installer, and set the same variable in the systemd unit's `Environment=` so the running service sees it.
+
+### Non-standard layouts
+
+The installer scans nvm, Hermes-managed node, and the active global npm root. If your 9router lives somewhere else, point at it directly:
+
+```bash
+S0ULCTL_APP_DIRS=/opt/9router/app node bin/s0ulctl.js install
+```
+
+`S0ULCTL_HOME_ROOTS` overrides the `/home/*` glob when home directories live elsewhere.
+
+## Development
+
+No dependencies. Node 18 or newer.
+
+```bash
+npm test          # 24 tests, node:test
+npm run check     # syntax check the loader and both shell scripts
+```
+
+The suite runs the real `install.sh` against a throwaway fake 9router tree in `$TMPDIR`, so it exercises the actual patch path rather than a mock: it asserts that persona strings get rewritten, that `.bak-s0ulctl` siblings hold the originals, that a second run does not double-patch, and that each failure mode (no install, missing anchor, no matching chunk) exits non-zero with a readable message.
+
+CI runs the suite on Node 18/20/22 plus `shellcheck` and a CLI smoke test.
 
 <details>
 <summary><b>✅ Click: what a healthy install run looks like</b></summary>
@@ -234,10 +260,13 @@ Every modified file has a `.bak-*` sibling (`custom-server.js.bak-<timestamp>`, 
 ## How it works internally
 
 1. `src/soul-loader.cjs` is copied into every 9router app directory and `require`d from `custom-server.js` at startup. It installs `globalThis.__s0ulctl`, which reads `soul.md` on each call with an mtime cache.
+   - Path and fallback are resolved at call time, not at module load, so `S0ULCTL_PATH` can change between startup and first use.
+   - `createLoader({ path, fallback })` returns an isolated loader; the default one is a module-level singleton. Tests use the factory so they never touch the real path.
 2. `src/install.sh` rewrites the hardcoded persona strings inside `.next-cli-build/server/chunks/*.js` from `"You are X."` to `(globalThis.__s0ulctl?.()||"You are X.")`.
    - `?.()` guards the startup race window before `custom-server.js` has installed the loader.
    - `||<original>` is the safety net: if `soul.md` is missing, empty, or unreadable, the chunk falls back to the original string so requests still succeed.
 3. Both edits are backed up (`*.bak-*` next to the originals). `src/uninstall.sh` restores them.
+4. `bin/s0ulctl.js` is a thin CLI wrapper. It only locates the shell scripts and forwards argv — no patch logic lives there.
 
 <details>
 <summary><b>Why multiple 9router installs can exist on one host</b></summary>
