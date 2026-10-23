@@ -7,6 +7,10 @@ const os = require("node:os");
 const path = require("node:path");
 const { execFileSync, spawnSync } = require("node:child_process");
 
+// The scripts shell out to `node --check`; keep the running interpreter
+// reachable even though the rest of PATH is stubbed out.
+const NODE_DIR = path.dirname(process.execPath);
+
 const CLI = path.join(__dirname, "..", "bin", "s0ulctl.js");
 const SRC = path.join(__dirname, "..", "src");
 
@@ -44,7 +48,7 @@ function harness() {
     bin,
     sudoLog,
     env: {
-      PATH: bin + ":/usr/bin:/bin",
+      PATH: bin + ":" + NODE_DIR + ":/usr/bin:/bin",
       HOME: root,
       S0ULCTL_PATH: path.join(root, "soul.md"),
       S0ULCTL_APP_DIRS: app,
@@ -54,7 +58,7 @@ function harness() {
 }
 
 function cli(ctx, args) {
-  return spawnSync("node", [CLI].concat(args), {
+  return spawnSync(process.execPath, [CLI].concat(args), {
     env: ctx.env,
     encoding: "utf8",
   });

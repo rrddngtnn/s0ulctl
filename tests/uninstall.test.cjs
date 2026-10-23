@@ -7,6 +7,10 @@ const os = require("node:os");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 
+// install.sh shells out to `node --check`; keep the running interpreter
+// reachable even though the rest of PATH is stubbed out.
+const NODE_DIR = path.dirname(process.execPath);
+
 const SRC = path.join(__dirname, "..", "src");
 
 const PERSONAS = [
@@ -41,7 +45,7 @@ function fakeInstall() {
 
 function env(ctx) {
   return {
-    PATH: ctx.bin + ":/usr/bin:/bin",
+    PATH: ctx.bin + ":" + NODE_DIR + ":/usr/bin:/bin",
     HOME: ctx.root,
     S0ULCTL_PATH: path.join(ctx.root, "soul.md"),
     S0ULCTL_APP_DIRS: ctx.app,

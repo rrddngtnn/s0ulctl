@@ -7,6 +7,10 @@ const os = require("node:os");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 
+// install.sh shells out to `node --check`; keep the running interpreter
+// reachable even though the rest of PATH is stubbed out.
+const NODE_DIR = path.dirname(process.execPath);
+
 const SRC = path.join(__dirname, "..", "src");
 
 /**
@@ -57,7 +61,7 @@ function runInstall(root, extraArgs) {
   const args = [path.join(SRC, "install.sh")].concat(extraArgs || []);
   return execFileSync("bash", args, {
     env: {
-      PATH: bin + ":" + process.env.PATH,
+      PATH: bin + ":" + NODE_DIR + ":/usr/bin:/bin",
       HOME: root,
       S0ULCTL_PATH: path.join(root, "soul.md"),
       S0ULCTL_APP_DIRS: fs.existsSync(path.join(appDir, "custom-server.js")) ? appDir : "",
@@ -149,7 +153,7 @@ test("install.sh fails loudly when no 9router install exists", () => {
     () =>
       execFileSync("bash", [path.join(SRC, "install.sh")], {
         env: {
-          PATH: bin + ":/usr/bin:/bin",
+          PATH: bin + ":" + NODE_DIR + ":/usr/bin:/bin",
           HOME: root,
           S0ULCTL_PATH: path.join(root, "soul.md"),
           S0ULCTL_APP_DIRS: "",
