@@ -93,11 +93,13 @@ S0ULCTL_APP_DIRS=/opt/9router/app node bin/s0ulctl.js install
 No dependencies. Node 18 or newer.
 
 ```bash
-npm test          # 24 tests, node:test
+npm test          # 40 tests, node:test
 npm run check     # syntax check the loader and both shell scripts
 ```
 
-The suite runs the real `install.sh` against a throwaway fake 9router tree in `$TMPDIR`, so it exercises the actual patch path rather than a mock: it asserts that persona strings get rewritten, that `.bak-s0ulctl` siblings hold the originals, that a second run does not double-patch, and that each failure mode (no install, missing anchor, no matching chunk) exits non-zero with a readable message.
+The suite runs the real `install.sh` and `uninstall.sh` against a throwaway fake 9router tree in `$TMPDIR`, so it exercises the actual patch path rather than a mock. It asserts that persona strings get rewritten, that `.bak-s0ulctl` siblings hold the originals, that a second run does not double-patch, that uninstall returns every byte to its pre-install state, and that each failure mode (no install, missing anchor, no matching chunk) exits non-zero with a readable message.
+
+The CLI is covered too: `install --restart` is verified to reach `systemctl` through a stubbed `sudo`, plain `install` is verified never to call it, and a failing script is verified to propagate its exit code.
 
 CI runs the suite on Node 18/20/22 plus `shellcheck` and a CLI smoke test.
 
